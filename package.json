@@ -1,0 +1,25 @@
+{
+  "name": "doubao-relay",
+  "version": "1.0.0",
+  "description": "豆包本地中转：多账号轮换 + OpenAI 兼容文生图/视频 API + 多参考图角色一致性（无 Docker，仅限个人自用）",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/start-all.js",
+    "gateway": "node src/index.js",
+    "upstream": "node --enable-source-maps --no-node-snapshot vendor/doubao-free-api/dist/index.js",
+    "login": "node src/login-browser.js",
+    "login:switch": "node src/login-browser.js --switch",
+    "setup": "npm install && npx playwright install chromium && npm run setup:upstream",
+    "setup:upstream": "npm install --prefix vendor/doubao-free-api --registry https://registry.npmmirror.com && npm run build --prefix vendor/doubao-free-api"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "eventsource-parser": "^1.1.2",
+    "express": "^4.21.2",
+    "playwright": "^1.50.1"
+  }
+}

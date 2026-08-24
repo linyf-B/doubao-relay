@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>豆包本地中转</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <h1>豆包本地中转</h1>
+      <p class="sub">多账号 · 文生图。若报 shark/710022004，请用本机 Chrome/Edge 调试登录。</p>
+    </header>
+
+    <section class="panel">
+      <h2>实时日志</h2>
+      <p class="hint">写入 <code id="logFilePath">data/logs/relay-*.log</code>；SSE 实时刷新。上传参考图时会显示缩略图，便于核对 @图N。</p>
+      <div class="row">
+        <button id="btnLogFollow" type="button" class="primary">跟随最新</button>
+        <button id="btnLogPause" type="button">暂停</button>
+        <button id="btnLogClear" type="button">清空面板</button>
+        <span id="logLiveStatus" class="hint">未连接</span>
+      </div>
+      <div id="logView" class="log-view"></div>
+    </section>
+
+    <section class="panel">
+      <h2>账号操作</h2>
+      <div class="row">
+        <button id="btnRefresh" type="button">刷新</button>
+        <button id="btnLogin" type="button" class="primary">登录豆包</button>
+        <button id="btnSwitch" type="button" class="primary">换账号登录</button>
+        <button id="btnClear" type="button" class="danger">清空全部账号</button>
+      </div>
+      <p id="loginHint" class="hint"></p>
+    </section>
+
+    <section class="panel">
+      <h2>账号池</h2>
+      <div id="accounts" class="accounts"></div>
+    </section>
+
+    <section class="panel">
+      <h2>手动粘贴 Cookie（易被风控）</h2>
+      <p class="hint">仅 Cookie 不够：豆包会校验浏览器指纹。优先「登录豆包」或本机 Chrome 调试。</p>
+      <textarea id="sessionInput" rows="4" placeholder="请粘贴浏览器 Application → Cookies 整段（含 sessionid、ttwid、passport_csrf_token 等），不要只贴 sessionid"></textarea>
+      <div class="row">
+        <button id="btnSaveSession" type="button" class="primary">保存完整 Cookie 并启用</button>
+        <button id="btnClearCd" type="button">清除全部冷却</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>本机浏览器调试说明</h2>
+      <p class="hint">Chrome / Edge 都可以；关键是带 <code>--remote-debugging-port=9222</code>。登录请在弹出的浏览器窗口操作。</p>
+      <details class="hint">
+        <summary>用 Edge 启动调试（推荐）</summary>
+        <pre style="white-space:pre-wrap;user-select:all">$dir = "$env:TEMP\doubao-cdp"; New-Item -ItemType Directory -Force -Path $dir | Out-Null
+& "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe" --remote-debugging-port=9222 --user-data-dir=$dir "https://www.doubao.com/chat/"</pre>
+      </details>
+      <details class="hint">
+        <summary>用 Chrome 启动调试</summary>
+        <pre style="white-space:pre-wrap;user-select:all">$dir = "$env:TEMP\doubao-cdp"; New-Item -ItemType Directory -Force -Path $dir | Out-Null
+& "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir=$dir "https://www.doubao.com/chat/"</pre>
+      </details>
+      <p class="hint"><code>.env</code> 需有 <code>DOUBAO_USE_CDP=1</code> 与 <code>DOUBAO_CDP_URL=http://127.0.0.1:9222</code>，改完重启中转。</p>
+    </section>
+
+    <section class="panel">
+      <h2>试一下文生图</h2>
+      <label>LOCAL_API_KEY
+        <input id="apiKey" type="password" autocomplete="off" />
+      </label>
+      <label>提示词
+        <textarea id="prompt" rows="3">一只戴墨镜的橘猫，赛博朋克霓虹，电影感</textarea>
+      </label>
+      <div class="row">
+        <label>模型
+          <select id="model">
+            <option>Seedream 5.0 Lite</option>
+            <option>Seedream 5.0</option>
+            <option selected>Seedream 4.5</option>
+            <option>Seedream 4.0</option>
+          </select>
+        </label>
+        <label>比例
+          <select id="ratio">
+            <option>1:1</option>
+            <option>16:9</option>
+            <option>9:16</option>
+            <option>4:3</option>
+            <option>3:4</option>
+          </select>
+        </label>
+        <button id="btnGen" type="button" class="primary">生成</button>
+      </div>
+      <pre id="genOut"></pre>
+      <div id="images" class="images"></div>
+    </section>
+
+    <section class="panel muted">
+      <h2>调用方式</h2>
+      <pre id="curlHint"></pre>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

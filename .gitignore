@@ -1,0 +1,10 @@
+node_modules/
+data/
+.env
+*.log
+.DS_Store
+playwright/.cache/
+vendor/doubao-free-api/node_modules/
+vendor/doubao-free-api/dist/
+vendor/doubao-free-api/logs/
+vendor/doubao-free-api/.idea/
