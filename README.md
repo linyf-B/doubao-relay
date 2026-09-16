@@ -1,6 +1,6 @@
 # doubao-relay · 本地媒体网关
 
-把 **豆包 / 即梦 / 可灵** 等网页额度，以及 **Cursor 编剧**、火山方舟等上游，统一成本机 **OpenAI 兼容 API**（默认 `http://127.0.0.1:8787/v1`）。自带深色管理页：**账号池、本机试生成、成片记录、实时日志、ToonFlow 插件中心**。无 Docker，仅限个人自用。
+把 **豆包 / 即梦 / 可灵** 等网页额度，以及 **本机 Cursor**（编剧与大模型）、火山方舟等上游，统一成本机 **OpenAI 兼容 API**（默认 `http://127.0.0.1:8787/v1`）。在 **ToonFlow** 里可同时挂「豆包 / 即梦本地中转」做生图生视频，再挂 **「Cursor 编剧」** 用 Cursor 账号支持的 **Composer、Claude、GPT、Gemini、Kimi** 等文本模型写剧本。自带深色管理页：**账号池、本机试生成、成片记录、实时日志、ToonFlow 插件中心**。无 Docker，仅限个人自用。
 
 ![网关控制台：账号与登录](docs/console-account.png)
 
@@ -14,7 +14,7 @@ ToonFlow / 脚本 / 任意 OpenAI 客户端
         ▼
   :8787  doubao-relay（管理页 + /v1 API）
         ├─ 生图 / 生视频：多方案路由（doubao · jimeng · jimeng-api · kling · …）
-        ├─ 编剧文本：cursor-relay（Cursor 订阅额度）
+        ├─ 编剧 / 大模型：cursor-relay → 本机 Cursor API（订阅额度，模型列表可同步）
         └─ 豆包对话：内部上游 :8000 doubao-free-api（npm start 一并拉起）
 ```
 
@@ -28,6 +28,7 @@ ToonFlow / 脚本 / 任意 OpenAI 客户端
 | **生成记录** | 成片与 API 调用统一时间线，可下载、看提示词与模型信息 |
 | **实时日志** | 按天日志文件 + 页面跟随 / 暂停 / 清空 |
 | **ToonFlow 插件** | 内置供应商 `.ts` 列表、复制路径、按插件查看调用日志 |
+| **Cursor 编剧桥接** | `cursor-relay.ts`：ToonFlow 文本任务走本机网关 → Cursor，可用账号内支持的各文本模型 |
 | **OpenAI 兼容 API** | `/v1/images/generations`、`/v1/videos/generations`、`/v1/chat/completions` |
 | **即梦 API 内嵌** | 进程内 SDK，**无需独立 :5100**；管理页登录即可，ToonFlow 不用填 SessionID |
 | **CDP 抗风控** | 本机 Chrome/Edge 远程调试，降低豆包 `shark` / `710022004` |
@@ -46,8 +47,9 @@ npm start
 浏览器打开 **http://127.0.0.1:8787**：
 
 1. **网关控制台 → 账号与登录**：选豆包 / 即梦 / 可灵 → **登录当前方案**（或 **换账号登录** 加入账号池）
-2. 顶栏 **ToonFlow 插件**：复制对应 `toonflow/*.ts` 路径，在 ToonFlow 导入；API 填 `LOCAL_API_KEY`，地址填 `http://127.0.0.1:8787/v1`
-3. 需要豆包视频抗风控时，在 **高级设置** 启用 CDP 或运行 `npm run start:cdp`
+2. 顶栏 **ToonFlow 插件**：复制 `toonflow/doubaorelay.ts`、`jimeng-relay.ts`、`cursor-relay.ts` 等路径，在 ToonFlow **设置 → 模型服务 → 添加供应商** 导入；API 填 `LOCAL_API_KEY`，地址填 `http://127.0.0.1:8787/v1`
+3. **要用 Cursor 模型**：在 [Cursor Dashboard → Integrations](https://cursor.com/dashboard/integrations) 创建密钥，写入 `.env` 的 `CURSOR_API_KEY`，重启 `npm start` 后在 ToonFlow 启用 **「Cursor 编剧」** 供应商（见下文）
+4. 需要豆包视频抗风控时，在 **高级设置** 启用 CDP 或运行 `npm run start:cdp`
 
 | 地址 | 说明 |
 |------|------|
@@ -135,6 +137,41 @@ DOUBAO_CDP_URL=http://127.0.0.1:9222
 
 更细的导入步骤见 [`toonflow/README.md`](toonflow/README.md)。
 
+### 在 ToonFlow 中同时挂本地中转与 Cursor
+
+ToonFlow **设置 → 模型服务** 里可并行启用多个供应商：生图/生视频走 **豆包本地中转**、**即梦·本地中转**，编剧与 Agent 文本走 **Cursor 编剧**（均指向本机 `8787`，不混用网页 SessionID）。
+
+![ToonFlow 模型服务：豆包 / 即梦 / Cursor 编剧](docs/toonflow-model-services-overview.png)
+
+典型组合（与上图一致）：
+
+- **豆包本地中转** / **即梦·本地中转**：Seedream、Seedance、即梦 4.0 等图像/视频模型（需在网关管理页登录对应平台）
+- **Cursor 编剧**：仅 **文本模型**；模型卡片来自 Cursor 账号能力（如 Composer 2.5、Claude Opus、GPT、Gemini Flash、Kimi K3 Max 等）
+
+![ToonFlow：豆包与即梦本地中转供应商](docs/toonflow-providers-doubao-jimeng.png)
+
+![ToonFlow：Cursor 编剧可用文本模型](docs/toonflow-cursor-models.png)
+
+### 接入本地 Cursor（`cursor-relay.ts`）
+
+网关把 ToonFlow 的文本请求转发到 **Cursor Cloud Agents API**（消耗 Cursor 订阅额度），适合漫剧编剧、分场、对白、分镜文案。生图/生视频请仍用 `jimeng-relay.ts` 或 `doubaorelay.ts`。
+
+1. 在 `doubao/.env` 配置（示例见 [`.env.example`](.env.example)）：
+
+   ```env
+   CURSOR_API_KEY=cursor_...
+   CURSOR_RUNTIME=cloud
+   ```
+
+   - `cloud`：纯文本编剧（推荐，无需绑定仓库）
+   - `local`：可配合 `CURSOR_CWD` 让 Agent 读写本地项目目录
+
+2. `npm start` 后，管理页 **ToonFlow 插件** 复制 `toonflow/cursor-relay.ts` 路径 → ToonFlow 导入供应商
+3. 供应商内填 **`LOCAL_API_KEY`** + **`http://127.0.0.1:8787/v1`**（不是 Cursor 密钥；Cursor 密钥只写在网关 `.env`）
+4. 在 ToonFlow 编剧/文本任务里选择 **Cursor 编剧** 下的模型；可用列表也可查：`GET http://127.0.0.1:8787/admin/cursor/models`
+
+管理页 **「Cursor 编剧」** 插件卡片与调用日志见上文 [`plugins-cursor.png`](docs/plugins-cursor.png)。
+
 ### 接入步骤（通用）
 
 1. `npm start`，在管理页为对应平台 **登录**
@@ -188,6 +225,18 @@ curl http://127.0.0.1:8787/v1/chat/completions ^
   -d "{\"model\":\"doubao\",\"messages\":[{\"role\":\"user\",\"content\":\"你好\"}]}"
 ```
 
+### 对话（Cursor 编剧）
+
+需已配置 `CURSOR_API_KEY`。`model` 填 ToonFlow/Cursor 支持的模型名（如 `composer-2.5`），或由网关默认 `CURSOR_DEFAULT_MODEL` 决定：
+
+```bash
+curl http://127.0.0.1:8787/v1/chat/completions ^
+  -H "Authorization: Bearer local-dev-key-change-me" ^
+  -H "Content-Type: application/json" ^
+  -H "X-Provider: cursor" ^
+  -d "{\"model\":\"composer-2.5\",\"messages\":[{\"role\":\"user\",\"content\":\"写一场古风对峙戏，对白简短\"}]}"
+```
+
 ## 常用命令
 
 | 命令 | 作用 |
@@ -211,7 +260,8 @@ curl http://127.0.0.1:8787/v1/chat/completions ^
 | `UPSTREAM_URL` | `http://127.0.0.1:8000` | 豆包对话上游 |
 | `IMAGE_PROVIDER` / `VIDEO_PROVIDER` | `doubao` | 默认生图/视频方案 |
 | `JIMENG_API_ENABLED` | `1` | 内嵌即梦 SDK |
-| `CURSOR_API_KEY` | — | Cursor 编剧（见 `cursor-relay.ts`） |
+| `CURSOR_API_KEY` | — | Cursor 编剧；在 Cursor Dashboard 创建 |
+| `CURSOR_RUNTIME` | `cloud` | `cloud` 纯文本 / `local` 可绑 `CURSOR_CWD` 项目 |
 | `DOUBAO_USE_CDP` | — | `1` 启用 CDP |
 | `LOG_DIR` | `data/logs` | 按天日志 |
 
