@@ -61,3 +61,54 @@ npm start
 npm run login
 npm run login:switch   # 换账号，写入账号池
 ```
+
+## 网关控制台
+
+顶栏 **「网关控制台」** 左侧为五个子页，与截图一致。
+
+### 账号与登录
+
+![多方案额度与账号池](docs/console-providers.png)
+
+- **方案卡片**：豆包（网页免费额度）、即梦（积分 / 每日免费）、可灵（每日次数）等；点选后下方为当前方案操作区
+- **登录当前方案 / 换账号登录**：浏览器扫码或 CDP 窗口登录，会话写入 `data/`，**不要用豆包 sessionid 当 API Bearer**
+- **账号池**：多账号列表、**切换**、单号 **清冷却**、删除；底部 **清空全部账号**
+- 查询已配置上游：`GET /admin/providers`
+
+### 本机试生成
+
+![文生图 / 文生视频试跑](docs/console-studio.png)
+
+- 与 ToonFlow **同一套 HTTP 接口**；顶栏显示当前方案与 **预计消耗**
+- **文生图 / 文生视频** 页签；提示词支持 `@图1`、`@图2` 对应参考图顺序（最多 6 张）
+- 模型（如 Seedream 5.0 Lite）、比例（16:9 等）；右侧为当前轮次对话/结果区
+- 可展开 **原始 JSON** 便于对照请求体
+
+### 生成记录
+
+![成片与 API 调用记录](docs/console-activity.png)
+
+- **实时同步** 开关；**清空** 仅清前端展示（日志文件仍按天保留）
+- 每条记录含提示词、模型、比例、缩略图与 **下载** 链接
+
+### 实时日志
+
+![网关运行输出](docs/console-logs.png)
+
+- 显示当前日志文件路径（默认 `data/logs/relay-YYYY-MM-DD.log`）
+- **跟随 / 暂停 / 清空**；便于排查 provider 路由、额度估算、HTTP 耗时
+
+### 高级设置
+
+![密钥 · Cookie · CDP](docs/console-settings.png)
+
+- **LOCAL_API_KEY** 与 **网关地址** `http://127.0.0.1:8787/v1`（多数场景只配这一项即可）
+- **手动粘贴 Cookie（备用）**：优先用页面登录；纯 Cookie 易触发风控
+- **CDP 调试（抗风控）**：状态、**启动 CDP 浏览器**；亦可 `npm run start:cdp` 或按页内 PowerShell 示例启动 Edge/Chrome `:9222`
+
+`.env` 常用 CDP：
+
+```env
+DOUBAO_USE_CDP=1
+DOUBAO_CDP_URL=http://127.0.0.1:9222
+```
