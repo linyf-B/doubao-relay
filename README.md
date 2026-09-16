@@ -112,3 +112,33 @@ npm run login:switch   # 换账号，写入账号池
 DOUBAO_USE_CDP=1
 DOUBAO_CDP_URL=http://127.0.0.1:9222
 ```
+
+## ToonFlow 插件中心
+
+顶栏 **「ToonFlow 插件」** 列出 `toonflow/` 下各供应商脚本，支持 **复制路径**、查看 **调用日志**（与 ToonFlow 请求实时同步）。
+
+| 文件 | 说明 |
+|------|------|
+| [`cursor-relay.ts`](toonflow/cursor-relay.ts) | Composer / Claude / Kimi 等，走 **Cursor 订阅**；`.env` 配置 `CURSOR_API_KEY` |
+| [`jimeng-relay.ts`](toonflow/jimeng-relay.ts) | 即梦生图 + 生视频（内嵌 API）；管理页登录即可 |
+| [`doubaorelay.ts`](toonflow/doubaorelay.ts) | 豆包对话 + 多方案生图/视频合一，可配置 provider 路由 |
+| [`kling-relay.ts`](toonflow/kling-relay.ts) | 可灵网页 |
+| [`volcengine-relay.ts`](toonflow/volcengine-relay.ts) | 火山方舟 Ark |
+| [`metaso-minimax-h3.ts`](toonflow/metaso-minimax-h3.ts) | 秘塔 MiniMax-H3 |
+| [`tencent-tokenhub-image.ts`](toonflow/tencent-tokenhub-image.ts) | 腾讯 TokenHub 混元 |
+
+![Cursor 编剧插件](docs/plugins-cursor.png)
+
+![豆包全功能插件与调用日志](docs/plugins-doubaorelay.png)
+
+![即梦 API 插件](docs/plugins-jimeng.png)
+
+更细的导入步骤见 [`toonflow/README.md`](toonflow/README.md)。
+
+### 接入步骤（通用）
+
+1. `npm start`，在管理页为对应平台 **登录**
+2. ToonFlow → 导入供应商 → 选择 `toonflow/*.ts`（已导入可 **检查更新** 或重新导入）
+3. **API 密钥** = `.env` 的 `LOCAL_API_KEY`
+4. **请求地址** = `http://127.0.0.1:8787/v1`
+5. 使用 `doubaorelay.ts` 时可在插件配置里指定 **生图/生视频方案**（`doubao`、`jimeng-api`、`kling` 等），留空则用 `.env` 默认
