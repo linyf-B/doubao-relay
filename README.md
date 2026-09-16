@@ -142,3 +142,87 @@ DOUBAO_CDP_URL=http://127.0.0.1:9222
 3. **API 密钥** = `.env` 的 `LOCAL_API_KEY`
 4. **请求地址** = `http://127.0.0.1:8787/v1`
 5. 使用 `doubaorelay.ts` 时可在插件配置里指定 **生图/生视频方案**（`doubao`、`jimeng-api`、`kling` 等），留空则用 `.env` 默认
+
+## 调用 API
+
+鉴权：`Authorization: Bearer <LOCAL_API_KEY>`。
+
+### 文生图
+
+```bash
+curl http://127.0.0.1:8787/v1/images/generations ^
+  -H "Authorization: Bearer local-dev-key-change-me" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"model\":\"Seedream 5.0 Lite\",\"prompt\":\"一只戴墨镜的橘猫，赛博朋克霓虹\",\"ratio\":\"16:9\"}"
+```
+
+多参考图：`images` 数组 + 提示词 `@图1`、`@图2`；网关会映射为平台占位并注入角色锁定规则。
+
+### 文生视频
+
+```bash
+curl http://127.0.0.1:8787/v1/videos/generations ^
+  -H "Authorization: Bearer local-dev-key-change-me" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"model\":\"Seedance 2.5\",\"prompt\":\"橘猫走过霓虹街道\",\"duration\":5,\"ratio\":\"16:9\"}"
+```
+
+同步等待结果，超时可达数分钟。别名：`/v1/videos`、`/v1/video/generations`。
+
+### 多方案路由
+
+支持 **doubao**、**jimeng**、**jimeng-api**、**kling**、**volcengine**、**openai** 等；`.env` 设默认与 failover，或请求体 / Header 覆盖：
+
+```json
+{ "provider": "jimeng-api", "prompt": "@图1 为角色立绘…", "ratio": "16:9", "images": ["…"] }
+```
+
+`X-Image-Provider` / `X-Video-Provider` 亦可。
+
+### 对话（豆包）
+
+```bash
+curl http://127.0.0.1:8787/v1/chat/completions ^
+  -H "Authorization: Bearer local-dev-key-change-me" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"model\":\"doubao\",\"messages\":[{\"role\":\"user\",\"content\":\"你好\"}]}"
+```
+
+## 常用命令
+
+| 命令 | 作用 |
+|------|------|
+| `npm start` | 上游 free-api + 网关（含内嵌即梦 API） |
+| `npm run gateway` | 仅网关 |
+| `npm run upstream` | 仅 doubao-free-api |
+| `npm run login` | 弹窗登录 |
+| `npm run login:switch` | 换账号加入池 |
+| `npm run start:cdp` | 启动 CDP 调试浏览器 |
+| `npm run setup` | 依赖 + Playwright + 构建上游与 jimeng-api |
+
+## 环境变量
+
+见 [`.env.example`](.env.example)。常用项：
+
+| 变量 | 默认 | 说明 |
+|------|------|------|
+| `PORT` | `8787` | 网关端口 |
+| `LOCAL_API_KEY` | `local-dev-key-change-me` | 客户端 Bearer |
+| `UPSTREAM_URL` | `http://127.0.0.1:8000` | 豆包对话上游 |
+| `IMAGE_PROVIDER` / `VIDEO_PROVIDER` | `doubao` | 默认生图/视频方案 |
+| `JIMENG_API_ENABLED` | `1` | 内嵌即梦 SDK |
+| `CURSOR_API_KEY` | — | Cursor 编剧（见 `cursor-relay.ts`） |
+| `DOUBAO_USE_CDP` | — | `1` 启用 CDP |
+| `LOG_DIR` | `data/logs` | 按天日志 |
+
+勿提交 `data/`、`.env`、`vendor/**/node_modules`。
+
+## 旧版文档
+
+改版前的 README 全文备份在 [`docs/README.legacy.md`](docs/README.legacy.md)。
+
+## 免责声明
+
+- 非官方接口，网页改版即可能失效。
+- **仅限个人自用学习**，禁止对外服务或商用。
+- 稳定生产请用各平台官方 API（如 [火山引擎豆包](https://www.volcengine.com/product/doubao)）。
